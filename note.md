@@ -21,3 +21,57 @@
 
 ## What I learned
 - Regression = predicting a number. This project is regression.
+
+## Day 2 – Charts and correlations (branch: day-2-eda)
+
+### What we did and why
+1. **Created a branch `day-2-eda`** (`git switch -c day-2-eda`)
+   - Why: work on a copy so `main` stays clean and working.
+2. **Made `02_eda.ipynb`** and loaded `train.csv` (20,640 rows, 9 columns)
+   - Why: a separate notebook keeps Day 1 (numbers) apart from Day 2 (charts).
+3. **Histogram of house value**
+   - Why: shows how prices are spread out. Found a spike at 5.0 (the cap).
+4. **Correlation table + heatmap**
+   - Why: correlation (-1 to +1) shows which features move with price.
+5. **Scatter: income vs price**
+   - Why: shows the shape of the relationship, not just one number.
+6. **California price map** (longitude/latitude, colour = price, size = population)
+   - Why: location matters a lot for house prices.
+7. **Boxplots + IQR outlier count**
+   - Why: see and count extreme values before deciding what to do on Day 5.
+
+### Answers
+**1. Strongest feature?**
+`MedInc` (median income), correlation **0.69** with price. Richer areas have more
+expensive houses. The next feature is only 0.15 (`AveRooms`), so income is far ahead
+of the rest. Latitude (-0.14) and HouseAge (0.11) are weak.
+
+**2. Most expensive areas?**
+The coast, mainly the Bay Area (average value about 2.74, i.e. ~$274k)
+and the Los Angeles area (about 2.40). The Central Valley inland is much cheaper
+(about 0.96). The overall average is 2.07.
+
+**3. How many outliers? Should we worry?**
+| Feature | Outliers |
+|---------|----------|
+| MedInc | 681 |
+| AveRooms | 511 |
+| AveBedrms | 1,424 |
+| AveOccup | 711 |
+| Population | 1,196 |
+- **992 houses (4.8%) are capped at 5.0.** Their real price is unknown, so the
+  model will under-predict the most expensive houses.
+- Yes, worth watching. Extreme values (like AveOccup = 1,243) can distort Linear
+  Regression, but tree models (Random Forest) handle them better. I'll test this
+  on Day 3–5 instead of deleting them now.
+
+### Other things I noticed
+- `AveRooms` and `AveBedrms` are strongly linked (0.85), so they carry similar information.
+- `Latitude` and `Longitude` are strongly linked (-0.92) because California runs diagonally.
+- Features have different scales, so some models will need scaling later.
+
+### What I learned
+- Correlation shows how strongly two things move together, but not why.
+- A chart can show things a table hides (like the 5.0 cap line).
+- Outliers are counted first and handled later.
+- Branch workflow: `switch -c` → work → `push -u origin` → pull request → merge.
