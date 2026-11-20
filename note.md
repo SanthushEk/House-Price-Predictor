@@ -75,3 +75,49 @@ and the Los Angeles area (about 2.40). The Central Valley inland is much cheaper
 - A chart can show things a table hides (like the 5.0 cap line).
 - Outliers are counted first and handled later.
 - Branch workflow: `switch -c` → work → `push -u origin` → pull request → merge.
+
+## Day 3 – First model: Linear Regression (branch: day-3-linear-regression)
+
+### What we did and why
+1. **Created a branch `day-3-linear-regression`**
+   - Why: keep Day 3 work separate so `main` stays clean.
+2. **Split the data into X (features) and y (price)**
+   - Why: X is what the model sees (8 columns). y is the answer it must predict.
+3. **Train/test split (80% / 20%, `random_state=42`)**
+   - Why: test the model on houses it has never seen, like an exam.
+     16,512 houses to train, 4,128 to test. `random_state` makes the split repeatable.
+4. **Baseline model (always predicts the average price)**
+   - Why: a score means nothing without something to compare to.
+5. **Trained Linear Regression** (`fit` then `predict`)
+   - Why: it learns one weight per feature, then applies them to new houses.
+6. **Measured with MAE, RMSE and R²**
+   - Why: three ways to see how wrong the model is.
+7. **Looked at the weights and a predicted vs actual chart**
+   - Why: to understand what the model learned and where it fails.
+
+### Results
+| Model | MAE | RMSE | R² |
+|-------|-----|------|----|
+| Baseline (average) | 0.906 | 1.145 | 0.00 |
+| Linear Regression | 0.533 | 0.746 | 0.576 |
+
+- **MAE 0.533 means the model is about $53,000 off on average** (prices are in $100,000s).
+- It beats the baseline (R² 0.58 vs 0.00), so it did learn something real.
+- But it explains only about 58% of the price changes. A lot is still missing.
+
+### What the model learned (weights)
+- Positive: `MedInc` (0.449), `AveBedrms` (0.783)
+- Negative: `Latitude` (-0.42), `Longitude` (-0.434), `AveRooms` (-0.123)
+- `AveBedrms` is large and positive while `AveRooms` is negative. This looks odd,
+  but those two features are strongly linked (0.85), so the model splits their
+  effect strangely. Weights can't always be trusted when features overlap.
+- The two location weights are both negative and large. Price depends on location
+  in a curved way (coast vs inland), and a straight-line formula can't capture that.
+
+### What the chart showed
+- Dots should sit on the red line. They spread out a lot.
+- The 184 houses capped at 5.0 in the test set are predicted at only about 3.85 on
+  average. The model can't reach the top of the price range.
+- A few predictions are impossible: 15 houses get a negative price, and the highest
+  prediction is about 11.5 (above the 5.0 cap). Linear Regression doesn't know
+  prices have limits.
