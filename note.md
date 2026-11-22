@@ -121,3 +121,100 @@ and the Los Angeles area (about 2.40). The Central Valley inland is much cheaper
 - A few predictions are impossible: 15 houses get a negative price, and the highest
   prediction is about 11.5 (above the 5.0 cap). Linear Regression doesn't know
   prices have limits.
+
+  ## Day 4 – Random Forest, Gradient Boosting and cross-validation (branch: day-4-tree-models)
+
+### What we did and why
+1. **Created a branch `day-4-tree-models`**
+   - Why: keep Day 4 work separate so `main` stays clean.
+2. **Used the same data and the same split as Day 3** (80/20, `random_state=42`)
+   - Why: a comparison is only fair if every model takes the same exam.
+3. **Wrote an `evaluate()` function** that trains a model and returns MAE, RMSE,
+   test R², train R² and time
+   - Why: score 3 models the same way without copy-pasting code.
+4. **Trained 3 models:** Linear Regression, Random Forest, Gradient Boosting
+   - Why: see whether tree models beat a straight-line formula.
+5. **Checked overfitting** (train R² minus test R²)
+   - Why: a big gap means the model memorised the training data.
+6. **5-fold cross-validation**
+   - Why: one split can be lucky. Averaging 5 splits gives a fairer score.
+7. **Boxplot of the 5 scores + predicted vs actual chart**
+   - Why: see the ranking and stability at a glance.
+
+### New ideas in my own words
+- **Decision tree:** a chain of yes/no questions about a house that ends in a price guess.
+- **Random Forest:** 100 trees, each trained on a random slice of data, and their
+  answers are averaged. Mistakes cancel out.
+- **Gradient Boosting:** trees built one after another, and each new tree focuses on
+  the mistakes of the previous ones.
+- **Overfitting:** the model memorises the training data and does worse on new data.
+- **Cross-validation:** split into 5 parts, test on each part in turn, and average the scores.
+
+### Results (single 80/20 split)
+| Model | MAE | RMSE | R² test | R² train | Time |
+|-------|-----|------|---------|----------|------|
+| Linear Regression | 0.533 | 0.746 | 0.576 | 0.613 | 0.1s |
+| Random Forest | 0.328 | 0.506 | 0.805 | 0.974 | 4s |
+| Gradient Boosting | 0.372 | 0.542 | 0.776 | 0.805 | 3s |
+
+- Random Forest cut the average miss from about **$53k to about $33k**.
+- R² went from 0.58 to 0.81, so the model explains about 81% of price changes.
+
+### Cross-validation (5 folds, R²)
+| Model | Mean | Spread (+/-) |
+|-------|------|--------------|
+| Linear Regression | 0.601 | 0.017 |
+| Random Forest | 0.810 | 0.006 |
+| Gradient Boosting | 0.788 | 0.011 |
+
+- Linear's score moves between 0.58 and 0.62 depending on the split. That is the
+  luck problem I saw on Day 3 (0.576 vs 0.610).
+- Random Forest is both the best and the most stable.
+- The cross-validation scores are close to the single split scores, so my
+  Day 3 and Day 4 results were not just luck.
+
+### Overfitting check
+- Random Forest: train 0.974, test 0.805, gap = **0.17**. It partly memorises the
+  training houses. But it still scores best on unseen data, so the test score is
+  what counts. This gap is normal for forests, though I should try to reduce it on Day 5.
+- Gradient Boosting: train 0.805, test 0.776, gap = 0.03. Very small gap, so it
+  generalises well. It is a bit less accurate than Random Forest here, but I haven't tuned it yet.
+- Linear Regression: gap 0.04, but both scores are low. It is **underfitting**
+  (too simple), not overfitting.
+
+### What the chart showed
+- Predicted vs actual dots sit much closer to the red line than Linear Regression's.
+- No negative predictions (Linear had 15), and the maximum prediction is 5.0
+  (Linear predicted up to 11.5). Trees can only output prices they have seen.
+- The capped 5.0 houses are still the hardest part.
+
+### My change (keep ONE)
+**Option A: number of trees:**
+| Trees | R² test | MAE | Time |
+|-------|---------|-----|------|
+| 20 | 0.799 | 0.336 | 1.1s |
+| 100 | 0.805 | 0.328 | 4.5s |
+| 300 | 0.806 | 0.327 | 14.5s |
+- Going from 100 to 300 trees tripled the time but improved R² by only 0.001.
+  More trees give diminishing returns, so 100 is a good choice.
+
+**Option B: `max_depth=5`:**
+- Train R² fell from 0.974 to 0.682 and test R² fell from 0.805 to 0.647.
+  The gap shrank (0.17 to 0.04), but the model got **worse**. Trees limited to 5 questions
+  deep are too simple. Limiting depth controls overfitting, but too much causes underfitting.
+
+### Problems I hit
+- `plt.boxplot(..., labels=...)` gave a `TypeError`. Newer Matplotlib renamed `labels`
+  to `tick_labels` and removed the old name. Fix: pass `list(cv_results.values())`
+  and set the names with `plt.xticks([1, 2, 3], names)`. Lesson: read the last line
+  of an error, because libraries change between versions.
+- (Add anything else here.)
+
+### What I learned
+- Tree models beat Linear Regression by a wide margin here, because they handle curves
+  and interactions like "high income AND coast".
+- Always check the train vs test gap, not just the test score.
+- Cross-validation is a fairer score than one split, and the spread shows stability.
+- More trees or more complexity doesn't always help. Time cost can grow while the score barely moves.
+- Next (Day 5): new features, tuning and feature importance. I want to see
+  which features the forest relies on, and whether it uses latitude/longitude as expected.
